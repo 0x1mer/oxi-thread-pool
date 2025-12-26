@@ -2,7 +2,7 @@
 
 #include <memory> // std::unique_ptr 
 
-#include "ThreadOxPool/TaskBase.h"
+#include "ThreadOxPool/Tasks/TaskBase.h"
 #include "ThreadOxPool/SchedulerTypes.h"
 #include "../rigtorp/MPMCQueue.h"
 
@@ -75,5 +75,11 @@ public:
 
     const QueueConfig& getQueueConfig() {
         return m_config;
+    }
+
+    bool empty() const noexcept {
+        return m_highPriorityQueue.empty() &&
+            m_mediumPriorityQueue.empty() &&
+            m_lowPriorityQueue.empty();
     }
 };
