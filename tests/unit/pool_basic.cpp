@@ -1,38 +1,56 @@
 #include "ThreadOxPool/ThreadPool.h"
+
+#include <cassert>
 #include <cstddef>
 #include <string_view>
-#include <cassert>
+#include <atomic>
+#include <thread>
 
-// 1️⃣ Basic creation
-void test_default_creation() {
+namespace tests {
+
+// ─────────────────────────────────────────────
+// Construction
+// ─────────────────────────────────────────────
+
+void Should_CreateThreadPool_When_DefaultConstructed()
+{
     ThreadPool pool{};
-    size_t wc = pool.getWorkerCount();
 
-    assert(wc >= 1);
-    assert(wc <= std::thread::hardware_concurrency() || 
-           std::thread::hardware_concurrency() == 0);
+    const size_t workerCount = pool.getWorkerCount();
+
+    assert(workerCount >= 1);
+    assert(
+        workerCount <= std::thread::hardware_concurrency() ||
+        std::thread::hardware_concurrency() == 0
+    );
 }
 
-// 2️⃣ The apparent number of workers
-void test_custom_worker_count() {
+void Should_UseExactWorkerCount_When_CustomWorkerCountProvided()
+{
     ThreadPool pool{4};
 
-    size_t wc = pool.getWorkerCount();
+    const size_t workerCount = pool.getWorkerCount();
 
-    assert(wc == 4);
+    assert(workerCount == 4);
 }
 
-// 3️⃣ 0 workers (edge case)
-void test_zero_workers() {
+void Should_FallbackToMinimum_When_ZeroWorkersProvided()
+{
     ThreadPool pool{0};
 
-    size_t wc = pool.getWorkerCount();
+    const size_t workerCount = pool.getWorkerCount();
 
-    assert(wc == kMinWorkerCount);
+    assert(workerCount == kMinWorkerCount);
 }
 
-void test_default_queue_config() {
+// ─────────────────────────────────────────────
+// Queue configuration
+// ─────────────────────────────────────────────
+
+void Should_UseDefaultQueueConfig_When_NotProvided()
+{
     ThreadPool pool{};
+
     const QueueConfig& cfg = pool.getQueueConfig();
 
     assert(cfg.highQueueSize   == kMinHighQueueSize);
@@ -40,8 +58,9 @@ void test_default_queue_config() {
     assert(cfg.lowQueueSize    == kMinLowQueueSize);
 }
 
-void test_custom_queue_config() {
-    QueueConfig cfg{32, 64, 128};
+void Should_UseCustomQueueConfig_When_Provided()
+{
+    const QueueConfig cfg{32, 64, 128};
     ThreadPool pool{4, cfg};
 
     const QueueConfig& actual = pool.getQueueConfig();
@@ -51,8 +70,9 @@ void test_custom_queue_config() {
     assert(actual.lowQueueSize    == 128);
 }
 
-void test_zero_queue_config_fallback() {
-    QueueConfig cfg{0, 0, 0};
+void Should_FallbackQueueConfig_When_ZeroSizesProvided()
+{
+    const QueueConfig cfg{0, 0, 0};
     ThreadPool pool{4, cfg};
 
     const QueueConfig& actual = pool.getQueueConfig();
@@ -62,29 +82,55 @@ void test_zero_queue_config_fallback() {
     assert(actual.lowQueueSize    == kMinLowQueueSize);
 }
 
-// 5️⃣ Custom logger
-void test_custom_logger() {
-    LogFn logger = [](std::string_view msg) {};
+// ─────────────────────────────────────────────
+// Logging
+// ─────────────────────────────────────────────
 
-    ThreadPool pool{4, {}, logger};
+void Should_InvokeLogger_When_ThreadPoolDestroyed()
+{
+    std::atomic<size_t> callCount{0};
+
+    LogFn logger = [&](std::string_view)
+    {
+        ++callCount;
+    };
+
+    {
+        ThreadPool pool{4, {}, logger};
+    } // destruction / shutdown
+
+    assert(callCount > 0);
 }
 
-// 6️⃣ All at once
-void test_full_custom_creation() {
-    QueueConfig cfg{};
+// ─────────────────────────────────────────────
+// Combined configuration
+// ─────────────────────────────────────────────
 
-    LogFn logger = [](std::string_view msg) {};
+void Should_CreateThreadPool_When_AllCustomParametersProvided()
+{
+    const QueueConfig cfg{};
+    LogFn logger = [](std::string_view) {};
 
+    [[maybe_unused]]
     ThreadPool pool{8, cfg, logger};
 }
 
-int main() {
-    test_default_creation();
-    test_custom_worker_count();
-    test_zero_workers();
-    test_custom_queue_config();
-    test_custom_logger();
-    test_full_custom_creation();
+} // namespace tests
+
+int main()
+{
+    using namespace tests;
+
+    Should_CreateThreadPool_When_DefaultConstructed();
+    Should_UseExactWorkerCount_When_CustomWorkerCountProvided();
+    Should_FallbackToMinimum_When_ZeroWorkersProvided();
+
+    Should_UseDefaultQueueConfig_When_NotProvided();
+    Should_UseCustomQueueConfig_When_Provided();
+    Should_FallbackQueueConfig_When_ZeroSizesProvided();
+
+    Should_InvokeLogger_When_ThreadPoolDestroyed();
+    Should_CreateThreadPool_When_AllCustomParametersProvided();
 
     return 0;
 }

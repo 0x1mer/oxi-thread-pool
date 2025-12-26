@@ -32,3 +32,17 @@ add_test(
     NAME Pool.Basic
     COMMAND pool_basic_tests
 )
+
+# -------- enqueue_basic --------
+add_executable(enqueue_basic_tests
+    tests/unit/enqueue_basic.cpp
+)
+
+target_link_libraries(enqueue_basic_tests
+    PRIVATE OxiThreadPool
+)
+
+add_test(
+    NAME Pool.Enqueue
+    COMMAND enqueue_basic_tests
+)
