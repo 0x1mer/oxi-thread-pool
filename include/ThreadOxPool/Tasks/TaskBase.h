@@ -1,6 +1,6 @@
 #pragma once
 
-#include <exception> // std::exception
+#include <exception>          // std::exception
 
 struct TaskBase {
     virtual ~TaskBase() = default;
