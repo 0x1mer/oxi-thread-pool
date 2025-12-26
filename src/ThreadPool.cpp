@@ -1,7 +1,7 @@
 // ThreadPool.cpp
 #include "ThreadOxPool/ThreadPool.h"
 #include "ThreadOxPool/Worker.h"
-#include "ThreadOxPool/TaskBase.h"
+#include "ThreadOxPool/Tasks/TaskBase.h"
 
 #include <algorithm>   // std::min
 #include <memory>
@@ -38,6 +38,7 @@ void ThreadPool::log(std::string_view msg) const noexcept {
         m_log(msg);
 }
 
+[[nodiscard]]
 bool ThreadPool::tryEnqueue(std::unique_ptr<TaskBase> task, Priority priority) {
     return m_taskScheduler.tryEnqueue(std::move(task), priority);
 }
